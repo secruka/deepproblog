@@ -1,4 +1,10 @@
 from typing import List, Union
+#works as brain in deepproblog
+#neural network to prolog language
+
+#つまり、prepareはnn→prologに変える役割、
+#groundで足し算であれば、その答えとなるものを全て割り出す
+#その後にエンジン（外部呼び出し？）で計算をする
 
 import torch
 from numpy.random import choice
@@ -23,7 +29,8 @@ from deepproblog.network import Network
 # EXTERN = '{}_extern_'
 EXTERN = "{}_extern_nocache_"
 
-
+# x= pytorch tensor which we want to change to prolog
+# store = where we store, engine.tensor_store
 def wrap_tensor(x, store, name: Union[Term, List[Term]] = None):
     if type(x) is list:
         if name is None:
@@ -61,7 +68,8 @@ def create_with_substitution(formula, second, translation, key):
     else:
         raise (Exception("Unknown node ", node))
 
-
+# 実行されると、ネットワークにデータを入力し、その出力（確率分布）
+# に基づいて上位k個の結果を選択して返すPython関数を生成します。
 def get_predicate(net):
     def predicate(inputs):
         domain = net.domain
@@ -78,7 +86,7 @@ def get_predicate(net):
 
     return predicate
 
-
+# 実行されると、ネットワークの出力テンソルをwrap_tensorで包んで返すPython関数を生成します。
 def get_det_predicate(net: Network, engine: Engine):
     def det_predicate(arguments):
         output = net([term2list(arguments, False)])[0]
@@ -92,8 +100,10 @@ def get_det_predicate(net: Network, engine: Engine):
 class ExactEngine(Engine):
     def __init__(self, model):
         Engine.__init__(self, model)
-        self.engine = DefaultEngine()
+        self.engine = DefaultEngine() #problogのデフォルトエンジン
 
+#!!!!!!! most important !!!!!!!! translate deepproblog into prolog
+# list of database we want to translate
     def prepare(self, db):
         translated = SimpleProgram()
         for e in db:
@@ -102,9 +112,9 @@ class ExactEngine(Engine):
                 p = e.probability
                 if p is not None and p.functor == "nn":
                     if len(p.args) == 4:
-                        new_es = self.create_nn_predicate_ad(e)
+                        new_es = self.create_nn_predicate_ad(e) #分類用
                     elif len(p.args) == 3:
-                        new_es = self.create_nn_predicate_det(e)
+                        new_es = self.create_nn_predicate_det(e) #決定出力用
                     elif len(p.args) == 2:
                         new_es = self.create_nn_predicate_fact(e)
                     else:
@@ -140,6 +150,7 @@ class ExactEngine(Engine):
 
         return clause_db
 
+#翻訳済みのPrologプログラムに対して、与えられたクエリ（問い合わせ）を元にグラウンディングを実行します
     def ground(self, query, label=None, repeat=1, **kwargs):
         db = self.model.solver.program
         if not self.model.solver.cache.cache:
@@ -147,6 +158,7 @@ class ExactEngine(Engine):
         ground = self.engine.ground(db, query.query, label=label)
         return ground
 
+# this is for to change nn to annotated disjunction
     def create_nn_predicate_ad(self, e):
         p = e.probability
         net, inputs, output, domain = p.args
@@ -188,7 +200,7 @@ class ExactEngine(Engine):
         net, inputs = p.args
         network = self.model.networks[str(net)]
         return [e]
-
+# PrologからPython関数（encoder_extern_nocache_）を直接呼び出す形式のルールに書き換えます。
     def create_nn_predicate_det(self, e):
         p = e.probability
         net, inputs, output = p.args

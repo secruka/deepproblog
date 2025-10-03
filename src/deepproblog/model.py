@@ -1,3 +1,6 @@
+#全体の管理を行なっているらしい。
+
+
 import json
 import os
 import pickle
@@ -37,6 +40,7 @@ from .utils import check_path
 
 
 class Model(object):
+    # このメソッドは、指定されたPrologファイルとニューラルネットワークのリストを受け取り、それらをModelオブジェクトの内部に保持します。
     def __init__(
         self,
         program_string: Union[str, os.PathLike],
@@ -102,7 +106,7 @@ class Model(object):
                 else:
                     result[(net, k)] = out[i]
         return result
-
+# モデルが思考するための「脳」の動かし方、つまり推論エンジンを設定します。
     def set_engine(self, engine: Engine, **kwargs):
         """
         Initializes the solver of this model with the given engine and additional arguments.
@@ -113,6 +117,7 @@ class Model(object):
         self.solver = Solver(self, engine, **kwargs)
         register_tensor_predicates(engine)
 
+# 与えられた**クエリ（問い合わせ）**のリストを解き、その確率的な結果を返します。モデルに「仕事」をさせるための主要なメソッドです。
     def solve(self, batch: Sequence[Query]) -> List[Result]:
         return self.solver.solve(batch)
 
@@ -133,6 +138,7 @@ class Model(object):
             "compile_times": compile_times,
         }
 
+# モデルの学習状態を保存・復元します。
     def save_state(self, filename: Union[str, PathLike, IO[bytes]], complete=False):
         """
         Saves the state of this model to a zip file with the given filename. This only includes the probabilistic
@@ -209,6 +215,8 @@ class Model(object):
         """
         return Term("tensor", Constant(self.solver.engine.tensor_store.store(tensor)))
 
+# 「Prologでtrainという名前が出てきたら、こちらのMNIST_trainオブジェクトを参照してください」
+# name を参照してsourceの中にnameに該当する部分を取り出す。
     def add_tensor_source(
         self, name: str, source: Union[ImageDataset, Mapping[Any, torch.Tensor]]
     ):
@@ -219,6 +227,7 @@ class Model(object):
         :return:
         """
         self.tensor_sources[name] = source
+
 
     def get_hyperparameters(self) -> dict:
         """
@@ -235,6 +244,7 @@ class Model(object):
         parameters["program"] = self.program.to_prolog()
         return parameters
 
+#引数がselfのためこれ自体を呼び出す必要がある。その際にそのニューラルネットのハイパーパラメータを教えてくれる
     def hyperparameters_to_file(self, filename):
         """
         Write the output of the get_hyperparameter() method in JSON format to a file.

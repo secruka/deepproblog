@@ -1,3 +1,7 @@
+#
+# MNISTの画像データから**「足し算クイズ」**のデータセットを自動で生成する機能が中心
+# MNISTデータセットからランダムに数字画像のインデックスを選び出し、足し算のペアを作成します。
+# 例えば、[[画像23番のインデックス], [画像589番のインデックス]] のようなペアを大量に生成し、self.dataに保存します。
 import itertools
 import json
 import random
@@ -63,7 +67,7 @@ class MNIST(Dataset):
         self.dataset = dataset
         self.data = datasets[dataset]
 
-
+# nは桁数、datasetはtrain or testのどちらかから、
 def addition(n: int, dataset: str, seed=None):
     """Returns a dataset for binary addition"""
     return MNISTOperator(
@@ -75,7 +79,8 @@ def addition(n: int, dataset: str, seed=None):
         seed=seed,
     )
 
-
+#MNISTデータセットからランダムに数字画像のインデックスを選び出し、足し算のペアを作成します。
+# 例えば、[[画像23番のインデックス], [画像589番のインデックス]] のようなペアを大量に生成し、self.dataに保存します。
 class MNISTOperator(Dataset, TorchDataset):
     def __getitem__(self, index: int) -> Tuple[list, list, int]:
         l1, l2 = self.data[index]

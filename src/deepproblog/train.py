@@ -14,7 +14,7 @@ class TrainObject(object):
     """
     An object that performs the training of the model and keeps track of the state of the training.
     """
-
+#初期化を行う
     def __init__(self, model: Model):
         self.model = model
         self.logger = Logger()
